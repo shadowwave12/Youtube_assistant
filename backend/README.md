@@ -11,7 +11,15 @@ The FastAPI service will own the application API and all future AI/RAG orchestra
 - `app/integrations/`: Adapters for YouTube transcripts, embeddings, vector search, and LLM providers.
 - `app/core/`: Configuration, error handling, and shared infrastructure.
 
-Only the entry point exists initially. The folders above are planned boundaries, not implemented business logic.
+The first implemented service is `app/services/transcript_service.py`. It only validates a YouTube source and fetches typed transcript segments. RAG orchestration remains a later concern.
+
+## API
+
+- `GET /health`: Lightweight liveness check.
+- `POST /api/videos/process`: Fetches a transcript, chunks it, creates an in-memory FAISS index, and returns the normalized video ID and chunk count.
+- `POST /api/chat`: Retrieves context from a processed video and returns a grounded answer with source chunks.
+
+The API routes are intentionally thin. `AssistantService` coordinates the existing transcript, chunking, retrieval, and answer services. Processed indexes are held in memory and are lost when the backend restarts.
 
 ## Local development
 
@@ -19,3 +27,5 @@ Only the entry point exists initially. The folders above are planned boundaries,
 python -m pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
+
+For tests, install `requirements-dev.txt` instead of or in addition to the runtime requirements.

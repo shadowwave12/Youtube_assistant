@@ -1,2 +1,10 @@
 fastapi
 uvicorn[standard]
+youtube-transcript-api
+langchain-core
+langchain-text-splitters
+langchain-community
+langchain-huggingface
+sentence-transformers
+faiss-cpu
+langchain-google-genai
