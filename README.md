@@ -7,7 +7,7 @@ A learning-oriented full-stack foundation for converting the existing Jupyter No
 ```text
 Youtube_assistant/
 |-- backend/       FastAPI API and future RAG services
-|-- frontend/      React + TypeScript + Vite browser application
+|-- frontend/      React + JavaScript + Vite browser application
 |-- notebooks/     Jupyter experiments and prototype investigations
 |-- tests/         Automated unit and integration tests
 |-- docs/          Implementation and operational documentation
@@ -51,4 +51,3 @@ cd frontend
 npm install
 npm run dev
 ```
-

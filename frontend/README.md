@@ -1,16 +1,16 @@
 # Frontend
 
-The React + TypeScript + Vite application will provide the browser interface for the assistant.
+The React + JavaScript + Vite application provides the browser interface for the assistant.
 
 ## Planned boundaries
 
 - `src/components/`: Reusable UI components.
 - `src/pages/`: User-facing screens.
-- `src/api/`: Typed calls to the FastAPI backend.
-- `src/types/`: Frontend data contracts.
+- `src/api/`: JavaScript API client for the FastAPI backend.
+- `src/components/`: Reusable UI components for processing and chat.
 - `src/assets/`: Static browser assets.
 
-The current `App` component is only a shell. Product workflows and API calls will be implemented later.
+The app calls the real FastAPI processing and chat endpoints. It does not mock successful responses.
 
 ## Local development
 
