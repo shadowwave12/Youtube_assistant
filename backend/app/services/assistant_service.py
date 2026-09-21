@@ -24,6 +24,10 @@ class AnswerGenerationError(Exception):
     """Raised when the language model cannot generate an answer."""
 
 
+class AnswerProviderConfigurationError(Exception):
+    """Raised when the language model credentials are missing or rejected."""
+
+
 @dataclass(frozen=True, slots=True)
 class ProcessedVideo:
     video_id: str
@@ -50,7 +54,7 @@ class AssistantService:
         self._transcript_service = transcript_service or TranscriptService()
         self._chunking_service = chunking_service or ChunkingService()
         self._retrieval_service = retrieval_service or RetrievalService()
-        self._answer_service = answer_service or AnswerService()
+        self._answer_service = answer_service
         self._indexes: dict[str, VectorStore] = {}
 
     def process_video(self, source: str, languages: list[str]) -> ProcessedVideo:
@@ -70,10 +74,25 @@ class AssistantService:
             raise VideoNotProcessedError(video_id)
 
         documents = self._retrieval_service.retrieve(question, vector_store)
-        if not documents:
-            raise NoRelevantContextError(video_id)
         try:
-            answer = self._answer_service.answer(question, documents)
+            answer_service = self._answer_service or AnswerService()
+            answer = answer_service.answer(question, documents)
         except Exception as error:
+            if _is_provider_configuration_error(error):
+                raise AnswerProviderConfigurationError from error
             raise AnswerGenerationError from error
         return ChatAnswer(answer=answer, sources=tuple(documents))
+
+
+def _is_provider_configuration_error(error: Exception) -> bool:
+    message = str(error).lower()
+    return any(
+        marker in message
+        for marker in (
+            "googleauthenticationerror",
+            "api key",
+            "unauthorized",
+            "invalid api key",
+            "permission denied",
+        )
+    )

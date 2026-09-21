@@ -8,6 +8,10 @@ from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+INSUFFICIENT_CONTEXT_RESPONSE = (
+    "Insufficient context: the retrieved transcript does not support an answer to this question."
+)
+
 
 class LanguageModel(Protocol):
     def invoke(self, prompt: Any) -> Any: ...
@@ -29,12 +33,14 @@ class AnswerService:
             template="""
       You are a helpful assistant.
       Answer ONLY from the provided transcript context.
-      If the context is insufficient, just say you don't know.
+    If the context does not contain enough information to answer the question, return exactly:
+    {insufficient_context_response}
+    Do not add unsupported claims, citations, timestamps, or source references.
 
       {context}
       Question: {question}
     """,
-            input_variables=["context", "question"],
+            input_variables=["context", "question", "insufficient_context_response"],
         )
 
     def answer(self, question: str, documents: Sequence[Document]) -> str:
@@ -43,10 +49,17 @@ class AnswerService:
         if not question.strip():
             raise ValueError("A question is required.")
         if not documents:
-            raise ValueError("At least one retrieved document is required.")
+            return INSUFFICIENT_CONTEXT_RESPONSE
 
         context = "\n\n".join(document.page_content for document in documents)
-        prompt_value = self._prompt.invoke({"context": context, "question": question})
+        prompt_value = self._prompt.invoke(
+            {
+                "context": context,
+                "question": question,
+                "insufficient_context_response": INSUFFICIENT_CONTEXT_RESPONSE,
+            }
+        )
         response = self._language_model.invoke(prompt_value)
         content = getattr(response, "content", response)
-        return str(content)
+        answer = str(content).strip()
+        return answer or INSUFFICIENT_CONTEXT_RESPONSE

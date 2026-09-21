@@ -33,6 +33,16 @@ class SourceReference(BaseModel):
     text: str
     video_id: str
     chunk_index: int = Field(..., ge=0)
+    segments: list["SourceSegment"] = Field(
+        default_factory=list,
+        description="Transcript segments contributing to this source, including original timing.",
+    )
+
+
+class SourceSegment(BaseModel):
+    text: str
+    start: float | None = None
+    duration: float | None = None
 
 
 class ChatResponse(BaseModel):

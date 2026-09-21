@@ -8,6 +8,7 @@ from backend.app.dependencies import get_assistant_service
 from backend.app.main import app
 from backend.app.services.assistant_service import (
     AnswerGenerationError,
+    AnswerProviderConfigurationError,
     ChatAnswer,
     NoRelevantContextError,
     ProcessedVideo,
@@ -40,7 +41,13 @@ class FakeAssistantService:
             sources=(
                 Document(
                     page_content="Transcript context",
-                    metadata={"video_id": video_id, "chunk_index": 0},
+                    metadata={
+                        "video_id": video_id,
+                        "chunk_index": 0,
+                        "segments": [
+                            {"text": "Transcript context", "start": 12.5, "duration": 4.0}
+                        ],
+                    },
                 ),
             ),
         )
@@ -99,8 +106,47 @@ def test_chat_success_returns_answer_and_sources(client: TestClient) -> None:
     assert response.json() == {
         "answer": "The grounded answer.",
         "sources": [
-            {"text": "Transcript context", "video_id": "4Vz6L8B73i4", "chunk_index": 0}
+            {
+                "text": "Transcript context",
+                "video_id": "4Vz6L8B73i4",
+                "chunk_index": 0,
+                "segments": [{"text": "Transcript context", "start": 12.5, "duration": 4.0}],
+            }
         ],
+    }
+
+
+def test_chat_sources_preserve_transcript_timestamps(client: TestClient) -> None:
+    response = client.post(
+        "/api/chat",
+        json={"video_id": "4Vz6L8B73i4", "question": "Where is this discussed?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["sources"][0]["segments"] == [
+        {"text": "Transcript context", "start": 12.5, "duration": 4.0}
+    ]
+
+
+def test_chat_returns_explicit_insufficient_context_response(client: TestClient) -> None:
+    class EmptyContextService(FakeAssistantService):
+        def chat(self, video_id: str, question: str) -> ChatAnswer:
+            return ChatAnswer(
+                answer="Insufficient context: the retrieved transcript does not support an answer to this question.",
+                sources=(),
+            )
+
+    app.dependency_overrides[get_assistant_service] = lambda: EmptyContextService()
+
+    response = client.post(
+        "/api/chat",
+        json={"video_id": "4Vz6L8B73i4", "question": "What is not discussed?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "answer": "Insufficient context: the retrieved transcript does not support an answer to this question.",
+        "sources": [],
     }
 
 
@@ -110,6 +156,7 @@ def test_chat_success_returns_answer_and_sources(client: TestClient) -> None:
         (VideoNotProcessedError("missing"), 404, "Process this video before asking questions."),
         (NoRelevantContextError("empty"), 404, "No relevant transcript context was found."),
         (AnswerGenerationError(), 502, "The answer provider could not generate a response."),
+        (AnswerProviderConfigurationError(), 503, "Gemini credentials were rejected. Update backend/.env and restart FastAPI."),
     ],
 )
 def test_chat_maps_common_failures(client: TestClient, error: Exception, expected_status: int, expected_detail: str) -> None:

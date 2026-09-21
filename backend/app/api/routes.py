@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from ..dependencies import get_assistant_service
 from ..services.assistant_service import (
     AnswerGenerationError,
+    AnswerProviderConfigurationError,
     AssistantService,
     NoRelevantContextError,
     VideoNotProcessedError,
@@ -18,7 +19,14 @@ from ..services.transcript_service import (
     TranscriptsDisabledError,
     UnsupportedTranscriptLanguageError,
 )
-from .schemas import ChatRequest, ChatResponse, ProcessVideoRequest, ProcessVideoResponse, SourceReference
+from .schemas import (
+    ChatRequest,
+    ChatResponse,
+    ProcessVideoRequest,
+    ProcessVideoResponse,
+    SourceReference,
+    SourceSegment,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["assistant"])
@@ -74,6 +82,11 @@ def chat(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No relevant transcript context was found.") from error
     except AnswerGenerationError as error:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="The answer provider could not generate a response.") from error
+    except AnswerProviderConfigurationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Gemini credentials were rejected. Update backend/.env and restart FastAPI.",
+        ) from error
     except Exception:
         logger.exception("Chat request failed")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Chat request failed.")
@@ -83,6 +96,7 @@ def chat(
             text=document.page_content,
             video_id=str(document.metadata.get("video_id", request.video_id)),
             chunk_index=int(document.metadata.get("chunk_index", index)),
+            segments=[SourceSegment(**segment) for segment in document.metadata.get("segments", [])],
         )
         for index, document in enumerate(result.sources)
     ]

@@ -1,9 +1,14 @@
 """FastAPI application entry point."""
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 from .api.routes import router
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 app = FastAPI(
     title="YouTube Assistant API",

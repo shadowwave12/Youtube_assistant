@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 youtube-transcript-api
+python-dotenv
 langchain-core
 langchain-text-splitters
 langchain-community

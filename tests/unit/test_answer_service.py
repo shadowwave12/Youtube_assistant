@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import pytest
 from langchain_core.documents import Document
 
-from backend.app.services.answer_service import AnswerService
+from backend.app.services.answer_service import AnswerService, INSUFFICIENT_CONTEXT_RESPONSE
 
 
 @dataclass
@@ -40,9 +40,9 @@ def test_answer_uses_only_retrieved_text_and_preserves_metadata_on_documents() -
     result = AnswerService(language_model=model, prompt=prompt).answer("What happened?", documents)
 
     assert result == "The grounded answer."
-    assert prompt.calls == [
-        {"context": "First context\n\nSecond context", "question": "What happened?"}
-    ]
+    assert prompt.calls[0]["context"] == "First context\n\nSecond context"
+    assert prompt.calls[0]["question"] == "What happened?"
+    assert prompt.calls[0]["insufficient_context_response"] == INSUFFICIENT_CONTEXT_RESPONSE
     assert documents[0].metadata["video_id"] == "abc"
     assert model.calls == prompt.calls
 
@@ -52,5 +52,19 @@ def test_answer_rejects_empty_question_or_context() -> None:
 
     with pytest.raises(ValueError):
         service.answer(" ", [Document(page_content="context")])
-    with pytest.raises(ValueError):
-        service.answer("Question?", [])
+    assert service.answer("Question?", []) == INSUFFICIENT_CONTEXT_RESPONSE
+
+
+def test_answer_uses_explicit_insufficient_context_response() -> None:
+    prompt = FakePrompt()
+    model = FakeLanguageModel()
+    model.invoke = lambda prompt_value: FakeResponse(INSUFFICIENT_CONTEXT_RESPONSE)
+
+    answer = AnswerService(language_model=model, prompt=prompt).answer(
+        "What is not discussed?",
+        [Document(page_content="The transcript discusses lesson planning.")],
+    )
+
+    assert answer == INSUFFICIENT_CONTEXT_RESPONSE
+    assert "source" not in answer.lower()
+    assert "timestamp" not in answer.lower()

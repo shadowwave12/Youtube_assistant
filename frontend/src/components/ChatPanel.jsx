@@ -61,6 +61,14 @@ export default function ChatPanel({
                     >
                       <span>Chunk {source.chunk_index + 1}</span>
                       {source.text}
+                      {source.segments?.map((segment, segmentIndex) => (
+                        <small key={`${source.chunk_index}-${segmentIndex}`}>
+                          {formatTimestamp(segment.start)}
+                          {segment.duration == null
+                            ? ""
+                            : ` + ${formatDuration(segment.duration)}`}
+                        </small>
+                      ))}
                     </blockquote>
                   ))}
                 </div>
@@ -103,4 +111,19 @@ export default function ChatPanel({
       </form>
     </section>
   );
+}
+
+function formatTimestamp(seconds) {
+  if (seconds == null || Number.isNaN(Number(seconds)))
+    return "Timestamp unavailable";
+  const totalSeconds = Math.max(0, Math.floor(Number(seconds)));
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${remainingSeconds}`;
+}
+
+function formatDuration(seconds) {
+  if (seconds == null || Number.isNaN(Number(seconds)))
+    return "duration unavailable";
+  return `${Number(seconds).toFixed(1)}s`;
 }

@@ -21,6 +21,12 @@ The first implemented service is `app/services/transcript_service.py`. It only v
 
 The API routes are intentionally thin. `AssistantService` coordinates the existing transcript, chunking, retrieval, and answer services. Processed indexes are held in memory and are lost when the backend restarts.
 
+## Environment variables
+
+Keep local secrets in `backend/.env`. This file is ignored by Git and must never be committed or exposed to the frontend.
+
+Copy `.env.example` to `.env` and set `GOOGLE_API_KEY` or `GEMINI_API_KEY` before using `/api/chat`.
+
 ## Local development
 
 ```powershell
