@@ -1,3 +1,5 @@
+import ReactMarkdown from "react-markdown";
+
 export default function ChatPanel({
   messages,
   question,
@@ -51,28 +53,13 @@ export default function ChatPanel({
               <div className="message-label">
                 {message.role === "user" ? "You" : "Assistant"}
               </div>
-              <p>{message.content}</p>
-              {message.sources && message.sources.length > 0 ? (
-                <div className="sources">
-                  <div className="sources-heading">Source excerpts</div>
-                  {message.sources.map((source) => (
-                    <blockquote
-                      key={`${source.video_id}-${source.chunk_index}`}
-                    >
-                      <span>Chunk {source.chunk_index + 1}</span>
-                      {source.text}
-                      {source.segments?.map((segment, segmentIndex) => (
-                        <small key={`${source.chunk_index}-${segmentIndex}`}>
-                          {formatTimestamp(segment.start)}
-                          {segment.duration == null
-                            ? ""
-                            : ` + ${formatDuration(segment.duration)}`}
-                        </small>
-                      ))}
-                    </blockquote>
-                  ))}
+              {message.role === "assistant" ? (
+                <div className="message-content">
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
                 </div>
-              ) : null}
+              ) : (
+                <p>{message.content}</p>
+              )}
             </article>
           ))
         )}

@@ -3,7 +3,11 @@ from dataclasses import dataclass
 import pytest
 from langchain_core.documents import Document
 
-from backend.app.services.answer_service import AnswerService, INSUFFICIENT_CONTEXT_RESPONSE
+from backend.app.services.answer_service import (
+    AnswerService,
+    INSUFFICIENT_CONTEXT_RESPONSE,
+    _clean_answer,
+)
 
 
 @dataclass
@@ -68,3 +72,30 @@ def test_answer_uses_explicit_insufficient_context_response() -> None:
     assert answer == INSUFFICIENT_CONTEXT_RESPONSE
     assert "source" not in answer.lower()
     assert "timestamp" not in answer.lower()
+
+
+def test_clean_answer_normalizes_newlines_and_removes_placeholders() -> None:
+    raw = "Here is the answer\\n\\n{answer}\\n[source]\\nThis is a short summary."
+
+    cleaned = _clean_answer(raw)
+
+    assert "{answer}" not in cleaned
+    assert "[source]" not in cleaned
+    assert "\\n" not in cleaned
+    assert "This is a short summary." in cleaned
+
+
+def test_clean_answer_removes_citation_artifacts_and_keeps_markdown() -> None:
+    raw = "## Key idea\n\n- First point\n- Second point\n\n[source]\n\n**Important**: execution matters."
+
+    cleaned = _clean_answer(raw)
+
+    assert cleaned.startswith("## Key idea")
+    assert "**Important**" in cleaned
+    assert "[source]" not in cleaned
+    assert "Key idea" in cleaned
+
+
+def test_clean_answer_returns_insufficient_context_for_empty_or_invalid_output() -> None:
+    assert _clean_answer("   ") == INSUFFICIENT_CONTEXT_RESPONSE
+    assert _clean_answer("{context}") == INSUFFICIENT_CONTEXT_RESPONSE
