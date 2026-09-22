@@ -33,7 +33,8 @@ class RetrievalService:
         if top_k <= 0:
             raise ValueError("top_k must be greater than zero.")
         self._embedding_model = embedding_model or HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            model_kwargs={"device": "cpu"},
         )
         self._vector_store_factory = vector_store_factory or _create_faiss_store
         self._top_k = top_k

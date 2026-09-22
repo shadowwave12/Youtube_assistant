@@ -47,3 +47,20 @@ From the repository root:
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
+
+## Render settings
+
+Use the `backend` directory as the Render root directory:
+
+```text
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+Set `LLM_PROVIDER`, `LLM_MODEL`, `LLM_API_KEY`, and `FRONTEND_URL` in Render. The backend uses `FRONTEND_URL` for production CORS and keeps localhost origins for local development.
+
+## CPU embedding deployment
+
+`requirements.txt` pins `torch==2.14.0+cpu` through the PyTorch CPU wheel index. This project does not need CUDA or a GPU. The embedding model remains `sentence-transformers/all-MiniLM-L6-v2` and is configured with `device: cpu`.
+
+The model is loaded lazily when the cached `AssistantService` first creates its `RetrievalService`. The same process reuses it for later video-processing and chat requests. Do not add `--reload` or multiple Uvicorn workers to the Render start command.

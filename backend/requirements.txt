@@ -5,8 +5,11 @@ python-dotenv
 langchain-core
 langchain-text-splitters
 langchain-community
-langchain-huggingface
+langchain-huggingface==1.2.2
 langchain-groq
-sentence-transformers
-faiss-cpu
+sentence-transformers==6.1.0
+transformers==5.17.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.0+cpu
+faiss-cpu==1.15.1
 langchain-google-genai

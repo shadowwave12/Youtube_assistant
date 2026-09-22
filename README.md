@@ -23,15 +23,15 @@ The user enters a YouTube URL, processes it, and asks questions about the transc
 
 ## 3. Technologies Used
 
-| Part | Technology | Role |
-| --- | --- | --- |
-| Frontend | React, Vite, JavaScript | Collects the URL/question and displays answers |
-| Backend | FastAPI, Python | Validates requests and runs the RAG pipeline |
-| Transcript | `youtube-transcript-api` | Retrieves YouTube captions |
-| Splitting | LangChain text splitters | Divides long transcripts into chunks |
-| Embeddings | Hugging Face sentence-transformers | Converts text into vectors |
-| Vector search | FAISS | Finds semantically similar chunks |
-| LLM | Gemini or Groq through LangChain | Writes the final answer |
+| Part          | Technology                         | Role                                           |
+| ------------- | ---------------------------------- | ---------------------------------------------- |
+| Frontend      | React, Vite, JavaScript            | Collects the URL/question and displays answers |
+| Backend       | FastAPI, Python                    | Validates requests and runs the RAG pipeline   |
+| Transcript    | `youtube-transcript-api`           | Retrieves YouTube captions                     |
+| Splitting     | LangChain text splitters           | Divides long transcripts into chunks           |
+| Embeddings    | Hugging Face sentence-transformers | Converts text into vectors                     |
+| Vector search | FAISS                              | Finds semantically similar chunks              |
+| LLM           | Gemini or Groq through LangChain   | Writes the final answer                        |
 
 ## 4. How the Application Works
 
@@ -96,19 +96,19 @@ Youtube_assistant/
 
 ## 8. Important Files
 
-| File | Purpose | What to learn |
-| --- | --- | --- |
-| `backend/app/main.py` | Creates FastAPI and `/health` | Startup and GET endpoints |
-| `backend/app/api/routes.py` | Defines the two application endpoints | Request bodies, responses, HTTP errors |
-| `backend/app/api/schemas.py` | Pydantic API models | JSON validation and type hints |
-| `backend/app/services/assistant_service.py` | Connects the RAG steps | End-to-end orchestration |
-| `backend/app/services/transcript_service.py` | Gets and normalizes captions | URL parsing and exceptions |
-| `backend/app/services/chunking_service.py` | Creates chunks and metadata | Text splitting |
-| `backend/app/services/retrieval_service.py` | Embeddings, FAISS, search | Semantic retrieval |
-| `backend/app/services/answer_service.py` | Prompt, LLM call, cleanup | Prompt engineering |
-| `backend/app/core/config.py` | Reads environment variables | Configuration and secrets |
-| `backend/app/core/llm_factory.py` | Creates Gemini or Groq | Provider switching |
-| `frontend/src/api/client.js` | Sends HTTP requests | Browser-to-API communication |
+| File                                         | Purpose                               | What to learn                          |
+| -------------------------------------------- | ------------------------------------- | -------------------------------------- |
+| `backend/app/main.py`                        | Creates FastAPI and `/health`         | Startup and GET endpoints              |
+| `backend/app/api/routes.py`                  | Defines the two application endpoints | Request bodies, responses, HTTP errors |
+| `backend/app/api/schemas.py`                 | Pydantic API models                   | JSON validation and type hints         |
+| `backend/app/services/assistant_service.py`  | Connects the RAG steps                | End-to-end orchestration               |
+| `backend/app/services/transcript_service.py` | Gets and normalizes captions          | URL parsing and exceptions             |
+| `backend/app/services/chunking_service.py`   | Creates chunks and metadata           | Text splitting                         |
+| `backend/app/services/retrieval_service.py`  | Embeddings, FAISS, search             | Semantic retrieval                     |
+| `backend/app/services/answer_service.py`     | Prompt, LLM call, cleanup             | Prompt engineering                     |
+| `backend/app/core/config.py`                 | Reads environment variables           | Configuration and secrets              |
+| `backend/app/core/llm_factory.py`            | Creates Gemini or Groq                | Provider switching                     |
+| `frontend/src/api/client.js`                 | Sends HTTP requests                   | Browser-to-API communication           |
 
 ## 9. API
 
@@ -117,25 +117,35 @@ Youtube_assistant/
 Returns server status and redacted provider configuration:
 
 ```json
-{"status":"ok","llm":{"provider":"groq","model":"openai/gpt-oss-120b","configured":true}}
+{
+  "status": "ok",
+  "llm": {
+    "provider": "groq",
+    "model": "openai/gpt-oss-120b",
+    "configured": true
+  }
+}
 ```
 
 ### `POST /api/videos/process`
 
 ```json
-{"source":"https://youtu.be/VEetaDgnfJM","languages":["en"]}
+{ "source": "https://youtu.be/VEetaDgnfJM", "languages": ["en"] }
 ```
 
 Example response:
 
 ```json
-{"video_id":"VEetaDgnfJM","status":"ready","chunk_count":31}
+{ "video_id": "VEetaDgnfJM", "status": "ready", "chunk_count": 31 }
 ```
 
 ### `POST /api/chat`
 
 ```json
-{"video_id":"VEetaDgnfJM","question":"What is the main topic of this video?"}
+{
+  "video_id": "VEetaDgnfJM",
+  "question": "What is the main topic of this video?"
+}
 ```
 
 The response contains an `answer` string and a `sources` list containing chunk text, video ID, chunk index, and timing metadata.
@@ -224,3 +234,97 @@ The automated tests mock external services where appropriate, so they do not req
 **Why is the index lost after restart?** This version stores it in process memory. Persistence can be added later, but memory keeps the learning project simple.
 
 Read `LEARNING.md` for the recommended study order and small experiments.
+
+## 16. Deployment
+
+The deployment keeps the same simple architecture:
+
+```text
+GitHub
+	|\
+	| +--> Vercel: React/Vite frontend
+	+----> Render: FastAPI backend -> Gemini or Groq
+```
+
+The backend still creates embeddings and an in-memory FAISS index when a user processes a video. No database or extra service is required for this version.
+
+### Step 1: Push to GitHub
+
+Push the repository to GitHub. Confirm that `.env` is not included. Only `.env.example` files with placeholder values should be committed.
+
+### Step 2: Deploy the backend to Render
+
+Create a new **Web Service** in Render and select the GitHub repository.
+
+| Setting        | Value                                              |
+| -------------- | -------------------------------------------------- |
+| Root Directory | `backend`                                          |
+| Runtime        | Python                                             |
+| Build Command  | `pip install -r requirements.txt`                  |
+| Start Command  | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
+
+Add these Render environment variables:
+
+```env
+LLM_PROVIDER=groq
+LLM_MODEL=openai/gpt-oss-120b
+LLM_API_KEY=your-groq-api-key
+FRONTEND_URL=https://your-frontend.vercel.app
+```
+
+For Gemini, replace the provider, model, and key with the values supported by your Gemini account. The API key stays in Render and is never added to Vercel.
+
+After deployment, check:
+
+```text
+https://your-backend.onrender.com/health
+```
+
+### Step 3: Deploy the frontend to Vercel
+
+Create a new Vercel project from the same GitHub repository.
+
+| Setting          | Value           |
+| ---------------- | --------------- |
+| Root Directory   | `frontend`      |
+| Framework        | Vite            |
+| Build Command    | `npm run build` |
+| Output Directory | `dist`          |
+
+Add this Vercel environment variable:
+
+```env
+VITE_API_URL=https://your-backend.onrender.com
+```
+
+Vite embeds this value during the build, so redeploy the frontend after changing it.
+
+### Step 4: Connect frontend and backend
+
+The frontend reads `VITE_API_URL` in `frontend/src/api/client.js`. The backend reads `FRONTEND_URL` in `backend/app/main.py` and allows that origin in CORS while keeping localhost origins for local development.
+
+### Step 5: Test the deployed application
+
+1. Open the Vercel URL.
+2. Paste a YouTube URL.
+3. Process the video and wait for the ready message.
+4. Ask a question.
+5. Confirm the answer appears in the conversation.
+6. Check the browser Network tab for successful `/api/videos/process` and `/api/chat` requests.
+7. Check Render logs if a request fails.
+
+See `DEPLOYMENT.md` for the checklist.
+
+## 17. Render Memory Note
+
+The backend uses `sentence-transformers/all-MiniLM-L6-v2` with `faiss-cpu`. The important deployment detail is that `backend/requirements.txt` pins a CPU-only Torch wheel:
+
+```text
+torch==2.14.0+cpu
+```
+
+It also uses Python 3.11.5 through `backend/runtime.txt`, matching the local project environment. This prevents pip from resolving a CUDA-enabled Torch distribution for a CPU-only Render instance.
+
+The embedding model is created inside `RetrievalService`, which is owned by the cached `AssistantService` dependency. It loads lazily on the first request that needs embeddings and is reused by later requests in that backend process. It is not loaded once per chat request.
+
+FAISS indexes remain in memory and are still process-local. One Render worker is intentional: additional workers could load separate Python processes and duplicate model memory. See `DEPLOYMENT.md` for cold-start and memory risks.

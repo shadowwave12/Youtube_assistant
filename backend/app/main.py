@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +15,19 @@ load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 logger = logging.getLogger(__name__)
 
+local_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+]
+configured_frontend_url = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
+allowed_origins = local_origins + (
+    [configured_frontend_url]
+    if configured_frontend_url and configured_frontend_url not in local_origins
+    else []
+)
+
 app = FastAPI(
     title="YouTube Assistant API",
     version="0.1.0",
@@ -22,7 +36,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],

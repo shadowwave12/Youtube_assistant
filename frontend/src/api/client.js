@@ -1,5 +1,5 @@
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
+  import.meta.env.VITE_API_URL ?? "http://localhost:8000"
 ).replace(/\/$/, "");
 
 export class ApiClientError extends Error {
@@ -34,15 +34,12 @@ async function apiRequest(path, options) {
     const errorDetail =
       typeof detail === "string"
         ? detail
-        : detail?.error?.message ??
+        : (detail?.error?.message ??
           detail?.message ??
           payload?.error?.message ??
           payload?.message ??
-          "The request could not be completed.";
-    throw new ApiClientError(
-      errorDetail,
-      response.status,
-    );
+          "The request could not be completed.");
+    throw new ApiClientError(errorDetail, response.status);
   }
 
   return response.json();

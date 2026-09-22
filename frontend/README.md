@@ -25,3 +25,5 @@ Build the production bundle with:
 ```powershell
 npm run build
 ```
+
+For Vercel, use `frontend` as the root directory, `npm run build` as the build command, and `dist` as the output directory. Set `VITE_API_URL` to the deployed Render backend URL.
