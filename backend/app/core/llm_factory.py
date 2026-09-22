@@ -12,6 +12,7 @@ def create_llm(settings: LLMSettings | None = None) -> Any:
     resolved_settings = settings or LLMSettings.from_env()
 
     if resolved_settings.provider == "gemini":
+        # LangChain adapter for Google's Gemini chat models.
         kwargs: dict[str, Any] = {
             "model": resolved_settings.model,
             "google_api_key": resolved_settings.api_key,
@@ -24,6 +25,7 @@ def create_llm(settings: LLMSettings | None = None) -> Any:
         return ChatGoogleGenerativeAI(**kwargs)
 
     if resolved_settings.provider == "groq":
+        # LangChain adapter for Groq-hosted chat models.
         kwargs = {
             "model_name": resolved_settings.model,
             "groq_api_key": resolved_settings.api_key,

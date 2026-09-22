@@ -22,7 +22,7 @@ VectorStoreFactory = Callable[[Sequence[Document], Embeddings], VectorStore]
 
 
 class RetrievalService:
-    """Create an in-memory index and retrieve the four most similar chunks."""
+    """Create an in-memory index and retrieve the six most similar chunks."""
 
     def __init__(
         self,
@@ -43,6 +43,7 @@ class RetrievalService:
 
         if not documents:
             raise ValueError("At least one document is required to build an index.")
+        # FAISS stores vector representations of chunks for semantic search.
         return self._vector_store_factory(documents, self._embedding_model)
 
     def retrieve(self, query: str, vector_store: VectorStore) -> list[Document]:
@@ -50,6 +51,7 @@ class RetrievalService:
 
         if not query.strip():
             raise ValueError("A retrieval query is required.")
+        # The question is compared with stored chunk vectors to find related text.
         retriever = vector_store.as_retriever(
             search_type="similarity",
             search_kwargs={"k": self._top_k},

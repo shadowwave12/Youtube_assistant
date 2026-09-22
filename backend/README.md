@@ -1,41 +1,31 @@
-# Backend
+# Backend Guide
 
-The FastAPI service will own the application API and all future AI/RAG orchestration.
+The backend is a small FastAPI application that owns the YouTube RAG pipeline. The browser sends JSON requests; Python retrieves transcript information and asks the configured LLM for a grounded answer.
 
-## Layout
+## Start Here
 
-- `app/main.py`: FastAPI application entry point.
-- `app/api/`: HTTP routes and request/response schemas.
-- `app/services/`: Application use cases such as transcript ingestion and question answering.
-- `app/models/`: Domain and API data models.
-- `app/integrations/`: Adapters for YouTube transcripts, embeddings, vector search, and LLM providers.
-- `app/core/`: Configuration, error handling, and shared infrastructure.
+Read these files in order:
 
-The first implemented service is `app/services/transcript_service.py`. It only validates a YouTube source and fetches typed transcript segments. RAG orchestration remains a later concern.
+1. `app/main.py` - creates FastAPI and exposes `/health`.
+2. `app/api/routes.py` - shows the two application endpoints.
+3. `app/services/assistant_service.py` - shows the complete workflow.
+4. `app/services/transcript_service.py` - gets the transcript.
+5. `app/services/chunking_service.py` - creates searchable chunks.
+6. `app/services/retrieval_service.py` - creates embeddings and searches FAISS.
+7. `app/services/answer_service.py` - creates the prompt and calls the LLM.
+8. `app/core/llm_factory.py` - selects Gemini or Groq.
 
-## API
+## Endpoints
 
-- `GET /health`: Lightweight liveness check.
-- `POST /api/videos/process`: Fetches a transcript, chunks it, creates an in-memory FAISS index, and returns the normalized video ID and chunk count.
-- `POST /api/chat`: Retrieves context from a processed video and returns a grounded answer with source chunks.
+- `GET /health`: returns server status and redacted provider/model configuration.
+- `POST /api/videos/process`: fetches a transcript, chunks it, creates embeddings, and stores a FAISS index in memory.
+- `POST /api/chat`: retrieves related chunks and returns a grounded answer plus sources.
 
-The API routes are intentionally thin. `AssistantService` coordinates the existing transcript, chunking, retrieval, and answer services. Processed indexes are held in memory and are lost when the backend restarts.
+The processed index is intentionally process-local. Restarting FastAPI means the video must be processed again.
 
-## Environment variables
+## Environment
 
-Keep local secrets in `backend/.env`. This file is ignored by Git and must never be committed or exposed to the frontend.
-
-Copy `.env.example` to `.env` and set the provider-specific values before using `/api/chat`.
-
-Recommended configuration:
-
-```env
-LLM_PROVIDER=gemini
-LLM_MODEL=gemini-3.6-flash
-LLM_API_KEY=your-gemini-api-key
-```
-
-Or for Groq:
+Create `backend/.env` from `.env.example`:
 
 ```env
 LLM_PROVIDER=groq
@@ -43,11 +33,17 @@ LLM_MODEL=openai/gpt-oss-120b
 LLM_API_KEY=your-groq-api-key
 ```
 
-## Local development
+For Gemini, use `LLM_PROVIDER=gemini`, a supported Gemini model, and a Gemini key. The provider-specific factory is the only place that chooses `ChatGoogleGenerativeAI` or `ChatGroq`.
+
+## Run and test
 
 ```powershell
-python -m pip install -r requirements.txt
-uvicorn app.main:app --reload
+cd backend
+..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-For tests, install `requirements-dev.txt` instead of or in addition to the runtime requirements.
+From the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+```

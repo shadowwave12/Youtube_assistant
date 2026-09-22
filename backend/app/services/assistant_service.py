@@ -86,6 +86,7 @@ class AssistantService:
         self._indexes: dict[str, VectorStore] = {}
 
     def process_video(self, source: str, languages: list[str]) -> ProcessedVideo:
+        # Ingestion flow: transcript -> chunks -> embeddings/FAISS index.
         logger.info("[VIDEO] Processing source")
         transcript = self._transcript_service.fetch(source, languages=languages)
         logger.info("[TRANSCRIPT] Retrieved video_id=%s segments=%d", transcript.video_id, len(transcript.segments))
@@ -105,6 +106,7 @@ class AssistantService:
         if vector_store is None:
             raise VideoNotProcessedError(video_id)
 
+        # RAG flow: retrieve relevant transcript chunks, then give them to the LLM.
         documents = self._retrieval_service.retrieve(question, vector_store)
         logger.info("[RETRIEVAL] Retrieved chunks=%d video_id=%s", len(documents), video_id)
         try:

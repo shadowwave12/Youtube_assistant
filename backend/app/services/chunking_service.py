@@ -28,6 +28,8 @@ class ChunkingService:
     def chunk(self, transcript: Transcript) -> list[Document]:
         """Return split transcript documents with their source metadata preserved."""
 
+        # A chunk is a smaller piece of the transcript that can be searched later.
+        # Timing metadata lets the API return useful source information.
         source_metadata = {
             "video_id": transcript.video_id,
             "segments": [

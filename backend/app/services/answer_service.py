@@ -78,6 +78,7 @@ Question: {question}
         if not documents:
             return INSUFFICIENT_CONTEXT_RESPONSE
 
+        # RAG prompt: combine retrieved transcript text with the user's question.
         context = "\n\n".join(document.page_content for document in documents)
         prompt_value = self._prompt.invoke(
             {
@@ -86,6 +87,7 @@ Question: {question}
                 "insufficient_context_response": INSUFFICIENT_CONTEXT_RESPONSE,
             }
         )
+        # The configured provider generates an answer from this prompt.
         response = self._language_model.invoke(prompt_value)
         answer = _clean_answer(_extract_text(response))
         return answer or INSUFFICIENT_CONTEXT_RESPONSE
