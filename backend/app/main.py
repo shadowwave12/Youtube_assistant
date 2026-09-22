@@ -21,12 +21,11 @@ local_origins = [
     "http://localhost:5174",
     "http://127.0.0.1:5174",
 ]
+production_origins = ["https://yt-assistant-omega.vercel.app"]
 configured_frontend_url = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
-allowed_origins = local_origins + (
-    [configured_frontend_url]
-    if configured_frontend_url and configured_frontend_url not in local_origins
-    else []
-)
+allowed_origins = local_origins + production_origins
+if configured_frontend_url and configured_frontend_url not in allowed_origins:
+    allowed_origins.append(configured_frontend_url)
 
 app = FastAPI(
     title="YouTube Assistant API",
@@ -38,8 +37,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Accept", "Content-Type"],
 )
 
 app.include_router(router)
