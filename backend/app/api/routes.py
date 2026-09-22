@@ -81,11 +81,20 @@ def chat(
     except NoRelevantContextError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No relevant transcript context was found.") from error
     except AnswerGenerationError as error:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="The answer provider could not generate a response.") from error
+        payload = error.to_response()
+        raise HTTPException(status_code=error.status_code, detail=payload) from error
     except AnswerProviderConfigurationError as error:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Gemini credentials were rejected. Update backend/.env and restart FastAPI.",
+            detail={
+                "success": False,
+                "error": {
+                    "code": "LLM_CONFIGURATION_ERROR",
+                    "message": "The configured language model provider is invalid or rejected the request. Check backend/.env and restart FastAPI.",
+                    "request_id": None,
+                },
+                "detail": "The configured language model provider is invalid or rejected the request. Check backend/.env and restart FastAPI.",
+            },
         ) from error
     except Exception:
         logger.exception("Chat request failed")

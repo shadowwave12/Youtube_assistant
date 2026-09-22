@@ -38,13 +38,13 @@ def test_build_index_injects_documents_and_embedding_model() -> None:
     assert calls == [(documents, embedding_model)]
 
 
-def test_retrieve_uses_similarity_and_k_four() -> None:
+def test_retrieve_uses_similarity_and_k_six() -> None:
     documents = [Document(page_content="context", metadata={"chunk_index": 0})]
     store = FakeStore(documents)
     service = RetrievalService(embedding_model=object(), vector_store_factory=lambda *_: store)
 
     assert service.retrieve("What is memory?", store) == documents
-    assert store.calls == [("similarity", {"k": 4})]
+    assert store.calls == [("similarity", {"k": 6})]
 
 
 def test_retrieval_rejects_empty_queries_and_indexes() -> None:

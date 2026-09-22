@@ -30,8 +30,17 @@ async function apiRequest(path, options) {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
+    const detail = payload?.detail;
+    const errorDetail =
+      typeof detail === "string"
+        ? detail
+        : detail?.error?.message ??
+          detail?.message ??
+          payload?.error?.message ??
+          payload?.message ??
+          "The request could not be completed.";
     throw new ApiClientError(
-      payload?.detail ?? "The request could not be completed.",
+      errorDetail,
       response.status,
     );
   }

@@ -25,7 +25,23 @@ The API routes are intentionally thin. `AssistantService` coordinates the existi
 
 Keep local secrets in `backend/.env`. This file is ignored by Git and must never be committed or exposed to the frontend.
 
-Copy `.env.example` to `.env` and set `GOOGLE_API_KEY` or `GEMINI_API_KEY` before using `/api/chat`.
+Copy `.env.example` to `.env` and set the provider-specific values before using `/api/chat`.
+
+Recommended configuration:
+
+```env
+LLM_PROVIDER=gemini
+LLM_MODEL=gemini-3.6-flash
+LLM_API_KEY=your-gemini-api-key
+```
+
+Or for Groq:
+
+```env
+LLM_PROVIDER=groq
+LLM_MODEL=openai/gpt-oss-120b
+LLM_API_KEY=your-groq-api-key
+```
 
 ## Local development
 

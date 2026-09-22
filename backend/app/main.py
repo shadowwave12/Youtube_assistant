@@ -1,14 +1,18 @@
 """FastAPI application entry point."""
 
 from pathlib import Path
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from .api.routes import router
+from .core.config import LLMSettings
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="YouTube Assistant API",
@@ -27,8 +31,27 @@ app.add_middleware(
 app.include_router(router)
 
 
-@app.get("/health", tags=["system"], summary="Check API health")
-def health() -> dict[str, str]:
-    """Return a lightweight liveness response."""
+@app.on_event("startup")
+def validate_llm_configuration() -> None:
+    """Validate provider config without invoking a paid model call during startup."""
 
-    return {"status": "ok"}
+    settings = LLMSettings.from_env(required=False)
+    if settings:
+        logger.info("[LLM] Provider configured provider=%s model=%s", settings.provider, settings.model)
+    else:
+        logger.warning("[LLM] Provider is not configured")
+
+
+@app.get("/health", tags=["system"], summary="Check API health")
+def health() -> dict[str, object]:
+    """Return liveness and redacted provider configuration state."""
+
+    settings = LLMSettings.from_env(required=False)
+    return {
+        "status": "ok",
+        "llm": {
+            "provider": settings.provider if settings else None,
+            "model": settings.model if settings else None,
+            "configured": settings is not None,
+        },
+    }

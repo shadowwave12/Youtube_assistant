@@ -28,7 +28,7 @@ class RetrievalService:
         self,
         embedding_model: Embeddings | None = None,
         vector_store_factory: VectorStoreFactory | None = None,
-        top_k: int = 4,
+        top_k: int = 6,
     ) -> None:
         if top_k <= 0:
             raise ValueError("top_k must be greater than zero.")

@@ -62,11 +62,19 @@ def client():
     app.dependency_overrides.clear()
 
 
-def test_health(client: TestClient) -> None:
+def test_health(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("LLM_PROVIDER", raising=False)
+    monkeypatch.delenv("LLM_MODEL", raising=False)
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["llm"] == {
+        "provider": None,
+        "model": None,
+        "configured": False,
+    }
 
 
 def test_process_video_success(client: TestClient) -> None:
@@ -156,7 +164,7 @@ def test_chat_returns_explicit_insufficient_context_response(client: TestClient)
         (VideoNotProcessedError("missing"), 404, "Process this video before asking questions."),
         (NoRelevantContextError("empty"), 404, "No relevant transcript context was found."),
         (AnswerGenerationError(), 502, "The answer provider could not generate a response."),
-        (AnswerProviderConfigurationError(), 503, "Gemini credentials were rejected. Update backend/.env and restart FastAPI."),
+        (AnswerProviderConfigurationError(), 503, "The configured language model provider is invalid or rejected the request. Check backend/.env and restart FastAPI."),
     ],
 )
 def test_chat_maps_common_failures(client: TestClient, error: Exception, expected_status: int, expected_detail: str) -> None:
@@ -168,4 +176,8 @@ def test_chat_maps_common_failures(client: TestClient, error: Exception, expecte
     )
 
     assert response.status_code == expected_status
-    assert response.json() == {"detail": expected_detail}
+    payload = response.json()
+    if isinstance(payload["detail"], str):
+        assert payload["detail"] == expected_detail
+    else:
+        assert payload["detail"]["error"]["message"] == expected_detail
