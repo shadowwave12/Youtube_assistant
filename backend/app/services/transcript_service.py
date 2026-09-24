@@ -121,6 +121,8 @@ class TranscriptService:
                 ) from error
             raise TranscriptNotFoundError(f"No transcript is available for video {video_id}.") from error
         except (VideoUnavailable, CouldNotRetrieveTranscript, YouTubeTranscriptApiException) as error:
+            import traceback
+            traceback.print_exc() 
             raise TranscriptFetchError(f"Could not fetch the transcript for video {video_id}.") from error
 
         segments = tuple(_to_segment(segment) for segment in raw_segments)
