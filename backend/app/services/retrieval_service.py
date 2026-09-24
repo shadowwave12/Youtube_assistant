@@ -1,13 +1,15 @@
 """Build and query the notebook's in-memory FAISS retrieval index."""
 
+
 from __future__ import annotations
 
 from typing import Any, Callable, Protocol, Sequence
+import os
 
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpointEmbeddings
 
 
 class Retriever(Protocol):
@@ -32,9 +34,13 @@ class RetrievalService:
     ) -> None:
         if top_k <= 0:
             raise ValueError("top_k must be greater than zero.")
-        self._embedding_model = embedding_model or HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2",
-            model_kwargs={"device": "cpu"},
+        hf_token = os.getenv("HF_TOKEN")
+        self._embedding_model = embedding_model or HuggingFaceEndpointEmbeddings(
+            huggingfacehub_api_token=hf_token,
+            model="sentence-transformers/all-MiniLM-L6-v2",
+            task="feature-extraction"
+            
+            # model_kwargs={"device": "cpu"},
         )
         self._vector_store_factory = vector_store_factory or _create_faiss_store
         self._top_k = top_k
